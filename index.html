@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سرزمین اعداد صحیح - بازی آموزشی ریاضی ششم</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Lalezar & Vazirmatn for child-friendly Persian typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-title: 'Lalezar', cursive, sans-serif;
+            --font-body: 'Vazirmatn', Tahoma, sans-serif;
+        }
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 50%, #fce7f3 100%);
+            min-height: 100vh;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        .title-font {
+            font-family: var(--font-title);
+            letter-spacing: 0.5px;
+        }
+        .ltr-num {
+            display: inline-block;
+            direction: ltr;
+            unicode-bidi: embed;
+            font-weight: 800;
+        }
+        /* Game Buttons & 3D Bubble Effects */
+        .btn-3d {
+            transition: all 0.15s ease;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2), 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        .tab-active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            transform: scale(1.03);
+            box-shadow: 0 6px 0 #92400e;
+        }
+        /* Frog Jump Animation */
+        @keyframes hop {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-28px) scale(1.12); }
+        }
+        .hopping {
+            animation: hop 0.45s ease-in-out;
+        }
+        /* Pulse & Floating Animations */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .floating {
+            animation: floatSlow 3s ease-in-out infinite;
+        }
+        /* Print styles for Report Card */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #report-card-modal, #report-card-modal * {
+                visibility: visible;
+            }
+            #report-card-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                box-shadow: none !important;
+                display: block !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 md:p-6 text-slate-800">
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- ==================== WELCOME / LOGIN MODAL ==================== -->
+    <div id="welcome-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-gradient-to-br from-white to-amber-50 border-4 border-amber-400 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl text-right">
+            <div class="text-center mb-5">
+                <div class="w-20 h-20 bg-gradient-to-br from-amber-300 to-orange-400 rounded-3xl flex items-center justify-center shadow-lg border-2 border-white mx-auto mb-3 floating">
+                    <span class="text-4xl">🎒</span>
+                </div>
+                <h1 class="title-font text-3xl sm:text-4xl text-amber-600 drop-shadow-sm">سرزمین اعداد صحیح</h1>
+                <p class="text-xs sm:text-sm font-bold text-slate-600 mt-1">بازی آموزشی ریاضی پایه ششم ابتدایی</p>
+            </div>
+
+            <div class="bg-amber-100/60 border-2 border-amber-300 rounded-2xl p-3 mb-5 text-center text-xs font-bold text-amber-900">
+                👨‍🏫 طراح و معلم: استاد رضا شیرمردی | 🏫 مدرسه: پیوند
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">نام و نام خانوادگی دانش‌آموز:</label>
+                    <input type="text" id="login-student-name" placeholder="مثلاً: علی رضایی" class="w-full bg-white border-2 border-amber-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-amber-500 shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">نام مدرسه:</label>
+                    <input type="text" id="login-school-name" value="پیوند" class="w-full bg-white border-2 border-amber-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-amber-500 shadow-inner">
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="btn-3d w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black py-3.5 rounded-2xl text-lg sm:text-xl shadow-lg">
+                🚀 ورود به بازی و شروع ماجراجویی
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="game-container" class="max-w-5xl mx-auto opacity-40 pointer-events-none transition-opacity duration-500">
+
+        <!-- Header / Masthead -->
+        <header class="bg-white/90 backdrop-blur-md border-4 border-amber-400 rounded-3xl p-4 sm:p-5 shadow-xl mb-5 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-amber-300 to-orange-400 rounded-2xl flex items-center justify-center shadow-md border-2 border-white floating shrink-0">
+                    <svg class="w-12 h-12 sm:w-14 sm:h-14" viewBox="0 0 64 64">
+                        <rect x="14" y="18" width="36" height="38" rx="10" fill="#38bdf8" stroke="#0284c7" stroke-width="3"/>
+                        <path d="M24 18 V12 C24 8, 40 8, 40 12 V18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+                        <rect x="18" y="22" width="28" height="16" rx="6" fill="#f43f5e" stroke="#be123c" stroke-width="2.5"/>
+                        <rect x="28" y="34" width="8" height="8" rx="2" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                        <circle cx="24" cy="29" r="2" fill="#fff"/>
+                        <circle cx="40" cy="29" r="2" fill="#fff"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="title-font text-2xl sm:text-4xl text-amber-600 drop-shadow-sm">سرزمین اعداد صحیح (مثبت و منفی)</h1>
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm font-bold text-slate-700">
+                        <span class="bg-sky-100 text-sky-800 px-3 py-1 rounded-full border border-sky-300">👨‍🏫 معلم: استاد رضا شیرمردی</span>
+                        <span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-300">🏫 مدرسه: <span id="display-school">پیوند</span></span>
+                        <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-300">👤 دانش‌آموز: <span id="display-student">---</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Score & Audio Controls -->
+            <div class="flex items-center gap-3 bg-amber-50 border-2 border-amber-300 px-4 py-2.5 rounded-2xl w-full md:w-auto justify-between md:justify-end">
+                <div class="text-right">
+                    <div class="text-xs text-slate-500 font-bold">امتیاز کل شما:</div>
+                    <div class="text-xl sm:text-2xl font-black text-amber-600 flex items-center gap-1">
+                        <span id="score-display">۰</span>
+                        <span class="text-amber-400 text-lg">⭐</span>
+                    </div>
+                </div>
+                <button onclick="openReportCard()" class="btn-3d bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                    <span>🎓 کارنامه توصیفی</span>
+                </button>
+                <button id="sound-btn" onclick="toggleSound()" class="btn-3d bg-white border-2 border-slate-300 p-2.5 rounded-xl text-lg" title="قطع/وصل صدا">
+                    🔊
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs (4 Game Modes) -->
+        <nav class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 mb-5">
+            <button id="tab-1" onclick="switchMode(1)" class="btn-3d tab-active rounded-2xl p-3 font-bold text-right flex items-center gap-2.5 border-2 border-amber-300 bg-white text-slate-700">
+                <span class="text-2xl sm:text-3xl bg-white/20 p-1.5 rounded-xl">🐸</span>
+                <div>
+                    <div class="text-xs opacity-85">مرحله اول</div>
+                    <div class="text-sm sm:text-base font-black">محور و شکار قرینه‌ها</div>
+                </div>
+            </button>
+            <button id="tab-2" onclick="switchMode(2)" class="btn-3d rounded-2xl p-3 font-bold text-right flex items-center gap-2.5 border-2 border-amber-300 bg-white text-slate-700">
+                <span class="text-2xl sm:text-3xl bg-sky-100 p-1.5 rounded-xl">🌡️</span>
+                <div>
+                    <div class="text-xs text-slate-400">مرحله دوم</div>
+                    <div class="text-sm sm:text-base font-black">دماسنج و آسانسور</div>
+                </div>
+            </button>
+            <button id="tab-3" onclick="switchMode(3)" class="btn-3d rounded-2xl p-3 font-bold text-right flex items-center gap-2.5 border-2 border-amber-300 bg-white text-slate-700">
+                <span class="text-2xl sm:text-3xl bg-rose-100 p-1.5 rounded-xl">⚔️</span>
+                <div>
+                    <div class="text-xs text-slate-400">مرحله سوم</div>
+                    <div class="text-sm sm:text-base font-black">نبرد بزرگ‌تر و کوچک‌تر</div>
+                </div>
+            </button>
+            <button id="tab-4" onclick="switchMode(4)" class="btn-3d rounded-2xl p-3 font-bold text-right flex items-center gap-2.5 border-2 border-amber-300 bg-white text-slate-700">
+                <span class="text-2xl sm:text-3xl bg-emerald-100 p-1.5 rounded-xl">🏆</span>
+                <div>
+                    <div class="text-xs text-slate-400">مرحله چهارم</div>
+                    <div class="text-sm sm:text-base font-black">چالش قوانین کتاب</div>
+                </div>
+            </button>
+        </nav>
+
+        <!-- Dynamic Feedback Toast Banner -->
+        <div id="feedback-banner" class="hidden mb-4 p-3.5 rounded-2xl border-2 font-bold text-center text-sm sm:text-base transition-all duration-300 shadow-md"></div>
+
+        <!-- ==================== MODE 1: INTERACTIVE NUMBER LINE & OPPOSITES ==================== -->
+        <section id="mode-1" class="bg-white/95 border-4 border-sky-300 rounded-3xl p-4 sm:p-6 shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b-2 border-dashed border-slate-200">
+                <div>
+                    <h2 class="title-font text-xl sm:text-2xl text-sky-700 flex items-center gap-2">
+                        <span>🐸 مرحله ۱: پرش روی محور و شکار قرینه‌ها</span>
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-600 mt-0.5">روی محور اعداد، سمت راست صفر <span class="text-rose-600 font-bold">مثبت (+)</span> و سمت چپ صفر <span class="text-sky-600 font-bold">منفی (−)</span> است.</p>
+                </div>
+                <div class="bg-sky-50 px-3.5 py-1.5 rounded-xl border border-sky-200 text-xs sm:text-sm font-bold text-sky-800 shrink-0">
+                    سوال <span id="m1-qnum">۱</span> از ۶ | امتیاز مرحله: <span id="m1-score">۰</span>
+                </div>
+            </div>
+
+            <!-- Question Prompt Box -->
+            <div class="my-4 bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-300 rounded-2xl p-4 text-center shadow-sm">
+                <div class="text-xs font-bold text-amber-700 mb-1" id="m1-qtype">ماموریت قورباغه دانا:</div>
+                <div id="m1-prompt" class="text-base sm:text-xl font-black text-slate-800">روی عدد +۳ کلیک کن تا قورباغه به آنجا بپرد!</div>
+            </div>
+
+            <!-- Interactive SVG Number Line Container -->
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-2 sm:p-4 overflow-x-auto">
+                <div class="min-w-[640px]">
+                    <svg id="m1-svg" viewBox="0 0 760 220" class="w-full h-auto select-none">
+                        <defs>
+                            <marker id="arrow-pos" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#e11d48"/>
+                            </marker>
+                            <marker id="arrow-neg" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#0284c7"/>
+                            </marker>
+                        </defs>
+
+                        <!-- Direction Headers -->
+                        <text x="665" y="25" fill="#e11d48" font-size="14" font-weight="bold" text-anchor="middle">جهت مثبت (بزرگ‌تر شدن) ←</text>
+                        <text x="95" y="25" fill="#0284c7" font-size="14" font-weight="bold" text-anchor="middle">→ جهت منفی (کوچک‌تر شدن)</text>
+
+                        <!-- Dynamic Rainbow Opposite Arcs Group -->
+                        <g id="m1-arcs-group"></g>
+
+                        <!-- Main Axis Line -->
+                        <line x1="380" y1="125" x2="730" y2="125" stroke="#e11d48" stroke-width="5" marker-end="url(#arrow-pos)"/>
+                        <line x1="380" y1="125" x2="30" y2="125" stroke="#0284c7" stroke-width="5" marker-end="url(#arrow-neg)"/>
+
+                        <!-- Ticks & Interactive Circles Group -->
+                        <g id="m1-ticks-group"></g>
+
+                        <!-- Frog Character on Number Line -->
+                        <g id="frog-avatar" transform="translate(380, 82)" class="transition-all duration-500 ease-out">
+                            <g id="frog-inner">
+                                <ellipse cx="0" cy="18" rx="18" ry="6" fill="rgba(0,0,0,0.15)"/>
+                                <ellipse cx="0" cy="4" rx="18" ry="14" fill="#22c55e" stroke="#15803d" stroke-width="2.5"/>
+                                <circle cx="-9" cy="-8" r="6" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+                                <circle cx="9" cy="-8" r="6" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+                                <circle cx="-9" cy="-8" r="3" fill="#fff"/>
+                                <circle cx="9" cy="-8" r="3" fill="#fff"/>
+                                <circle cx="-9" cy="-8" r="1.5" fill="#000"/>
+                                <circle cx="9" cy="-8" r="1.5" fill="#000"/>
+                                <path d="M -8 6 Q 0 13 8 6" fill="none" stroke="#14532d" stroke-width="2.5" stroke-linecap="round"/>
+                                <circle cx="-11" cy="3" r="2.5" fill="#f43f5e" opacity="0.6"/>
+                                <circle cx="11" cy="3" r="2.5" fill="#f43f5e" opacity="0.6"/>
+                            </g>
+                        </g>
+
+                        <!-- Textbook Style Brackets at Bottom -->
+                        <path d="M 405 180 L 405 190 L 710 190 L 710 180" fill="none" stroke="#e11d48" stroke-width="2.5"/>
+                        <text x="557" y="210" fill="#e11d48" font-size="13" font-weight="bold" text-anchor="middle">اعداد صحیح مثبت (گرم / بالای صفر)</text>
+
+                        <text x="380" y="208" fill="#059669" font-size="12" font-weight="bold" text-anchor="middle">مرز صفر</text>
+
+                        <path d="M 50 180 L 50 190 L 355 190 L 355 180" fill="none" stroke="#0284c7" stroke-width="2.5"/>
+                        <text x="202" y="210" fill="#0284c7" font-size="13" font-weight="bold" text-anchor="middle">اعداد صحیح منفی (سرد / زیر صفر)</text>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 bg-sky-50 p-3 rounded-2xl border border-sky-200 text-xs sm:text-sm">
+                <div class="text-slate-700">
+                    💡 <strong>نکته کتاب درسی:</strong> هر عدد و <strong>قرینه‌اش</strong> به یک اندازه از صفر فاصله دارند اما در دو طرف مخالف صفر هستند (مثلاً قرینه <span class="ltr-num text-rose-600">+۴</span> عدد <span class="ltr-num text-sky-600">−۴</span> است).
+                </div>
+                <button onclick="showOppositeDemo()" class="btn-3d bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-xl font-bold shrink-0">
+                    🌈 نمایش کمان قرینه‌ها
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== MODE 2: THERMOMETER & ELEVATOR ==================== -->
+        <section id="mode-2" class="hidden bg-white/95 border-4 border-emerald-400 rounded-3xl p-4 sm:p-6 shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b-2 border-dashed border-slate-200">
+                <div>
+                    <h2 class="title-font text-xl sm:text-2xl text-emerald-700 flex items-center gap-2">
+                        <span>🌡️ مرحله ۲: دماسنج و آسانسور جادویی</span>
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-600 mt-0.5">کاربرد اعداد مثبت و منفی در زندگی واقعی (دمای هوا و طبقات ساختمان)</p>
+                </div>
+                <div class="bg-emerald-50 px-3.5 py-1.5 rounded-xl border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-800 shrink-0">
+                    سوال <span id="m2-qnum">۱</span> از ۶ | امتیاز مرحله: <span id="m2-score">۰</span>
+                </div>
+            </div>
+
+            <!-- Question Box -->
+            <div class="my-4 bg-gradient-to-r from-emerald-50 to-teal-100 border-2 border-emerald-300 rounded-2xl p-4 text-center">
+                <span id="m2-badge" class="inline-block bg-emerald-600 text-white text-xs px-3 py-0.5 rounded-full font-bold mb-1">ماموریت دماسنج</span>
+                <div id="m2-prompt" class="text-base sm:text-xl font-black text-slate-800">هوای شهر اردبیل ۴ درجه زیر صفر است. دماسنج را روی عدد درست تنظیم کن!</div>
+            </div>
+
+            <!-- Interactive Simulators Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center my-4">
+                
+                <!-- 1. Thermometer Card -->
+                <div id="thermo-panel" class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 flex flex-col items-center">
+                    <h3 class="font-black text-base text-slate-700 mb-2">🌡️ دماسنج هوشمند (<span class="text-rose-600">گرم +</span> / <span class="text-sky-600">سرد −</span>)</h3>
+                    
+                    <div class="flex items-center gap-6 my-2">
+                        <!-- Visual Thermometer Tube -->
+                        <div class="relative w-16 h-64 bg-slate-200 rounded-full border-4 border-slate-400 flex flex-col justify-end p-1.5 shadow-inner">
+                            <div class="absolute left-0 right-0 top-1/2 border-t-2 border-dashed border-emerald-600 z-20 flex justify-between px-1">
+                                <span class="bg-emerald-600 text-white text-[10px] px-1 rounded -mt-2">۰°</span>
+                            </div>
+                            <div id="thermo-fill" class="w-full rounded-full transition-all duration-300 bg-rose-500" style="height: 50%;"></div>
+                            <div id="thermo-bulb" class="w-12 h-12 rounded-full bg-rose-500 -mb-2 mx-auto border-2 border-white shadow-md z-10 flex items-center justify-center text-white font-black text-xs ltr-num">
+                                ۰°
+                            </div>
+                        </div>
+
+                        <!-- Controls & Value Display -->
+                        <div class="flex flex-col items-center gap-3">
+                            <div id="thermo-Status-badge" class="px-4 py-1.5 rounded-xl font-black text-sm bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                مرز یخ‌زدگی (صفر)
+                            </div>
+                            <div id="thermo-readout" class="text-3xl sm:text-4xl font-black ltr-num text-emerald-600 bg-white px-5 py-2 rounded-2xl border-2 border-slate-300 shadow-sm">
+                                ۰°C
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="changeThermo(1)" class="btn-3d bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl font-black text-sm">
+                                    🔼 گرم‌تر (+۱)
+                                </button>
+                                <button onclick="changeThermo(-1)" class="btn-3d bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-xl font-black text-sm">
+                                    🔽 سردتر (−۱)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Elevator Building Card -->
+                <div id="elevator-panel" class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 flex flex-col items-center">
+                    <h3 class="font-black text-base text-slate-700 mb-2">🏢 آسانسور برج پیوند</h3>
+                    
+                    <div class="flex items-center gap-5 w-full justify-center my-1">
+                        <div class="w-40 bg-slate-700 p-2.5 rounded-2xl border-4 border-slate-500 shadow-inner relative">
+                            <div id="building-floors" class="flex flex-col gap-1"></div>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="text-xs font-bold text-slate-500">طبقه فعلی آسانسور:</div>
+                            <div id="elevator-readout" class="text-3xl font-black ltr-num bg-slate-900 text-amber-400 px-5 py-2 rounded-xl border-2 border-slate-400 font-mono">
+                                ۰
+                            </div>
+                            <div class="text-xs text-center text-slate-500 max-w-[130px]">
+                                روی دکمه طبقه دلخواه در ساختمان کلیک کن یا با دکمه‌های زیر حرکت کن:
+                            </div>
+                            <div class="flex flex-col gap-2 w-full">
+                                <button onclick="moveElevator(1)" class="btn-3d bg-rose-500 text-white py-2 px-3 rounded-xl font-bold text-xs">
+                                    ⬆️ یک طبقه بالا (+۱)
+                                </button>
+                                <button onclick="moveElevator(-1)" class="btn-3d bg-sky-500 text-white py-2 px-3 rounded-xl font-bold text-xs">
+                                    ⬇️ یک طبقه پایین (−۱)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <button onclick="checkMode2Answer()" class="btn-3d bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-base sm:text-lg font-black px-8 py-3 rounded-2xl">
+                    ✅ ثبت و بررسی پاسخ
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== MODE 3: COMPARING INTEGERS BATTLE ==================== -->
+        <section id="mode-3" class="hidden bg-white/95 border-4 border-rose-400 rounded-3xl p-4 sm:p-6 shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b-2 border-dashed border-slate-200">
+                <div>
+                    <h2 class="title-font text-xl sm:text-2xl text-rose-700 flex items-center gap-2">
+                        <span>⚔️ مرحله ۳: نبرد بزرگ‌تر و کوچک‌تر</span>
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-600 mt-0.5">هرچه روی محور به سمت <strong>راست</strong> برویم عددها <strong>بزرگ‌تر</strong> و هرچه به سمت <strong>چپ</strong> برویم <strong>کوچک‌تر</strong> می‌شوند!</p>
+                </div>
+                <div class="bg-rose-50 px-3.5 py-1.5 rounded-xl border border-rose-200 text-xs sm:text-sm font-bold text-rose-800 shrink-0">
+                    سوال <span id="m3-qnum">۱</span> از ۸ | امتیاز مرحله: <span id="m3-score">۰</span>
+                </div>
+            </div>
+
+            <!-- Battle Arena Cards -->
+            <div class="my-6 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+                <div id="m3-card-right" class="w-40 h-36 sm:w-48 sm:h-44 rounded-3xl border-4 flex flex-col items-center justify-center shadow-lg transition-all">
+                    <span id="m3-num-right" class="text-4xl sm:text-6xl font-black ltr-num">+۲</span>
+                    <span id="m3-label-right" class="text-xs font-bold mt-2 px-3 py-0.5 rounded-full">عدد مثبت</span>
+                </div>
+
+                <div id="m3-operator-box" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-amber-100 border-4 border-dashed border-amber-400 flex items-center justify-center text-3xl sm:text-5xl font-black text-amber-600">
+                    ؟
+                </div>
+
+                <div id="m3-card-left" class="w-40 h-36 sm:w-48 sm:h-44 rounded-3xl border-4 flex flex-col items-center justify-center shadow-lg transition-all">
+                    <span id="m3-num-left" class="text-4xl sm:text-6xl font-black ltr-num">−۵</span>
+                    <span id="m3-label-left" class="text-xs font-bold mt-2 px-3 py-0.5 rounded-full">عدد منفی</span>
+                </div>
+            </div>
+
+            <!-- Comparison Choice Buttons -->
+            <div class="flex justify-center gap-4 sm:gap-6 my-4">
+                <button onclick="submitComparison('>')" class="btn-3d bg-rose-500 hover:bg-rose-600 text-white px-6 py-3.5 rounded-2xl font-black text-lg sm:text-xl flex flex-col items-center min-w-[110px]">
+                    <span class="text-3xl leading-none">&gt;</span>
+                    <span class="text-xs mt-1">عدد راست بزرگ‌تر</span>
+                </button>
+                <button onclick="submitComparison('=')" class="btn-3d bg-amber-500 hover:bg-amber-600 text-white px-6 py-3.5 rounded-2xl font-black text-lg sm:text-xl flex flex-col items-center min-w-[110px]">
+                    <span class="text-3xl leading-none">=</span>
+                    <span class="text-xs mt-1">مساوی هستند</span>
+                </button>
+                <button onclick="submitComparison('<')" class="btn-3d bg-sky-500 hover:bg-sky-600 text-white px-6 py-3.5 rounded-2xl font-black text-lg sm:text-xl flex flex-col items-center min-w-[110px]">
+                    <span class="text-3xl leading-none">&lt;</span>
+                    <span class="text-xs mt-1">عدد راست کوچک‌تر</span>
+                </button>
+            </div>
+
+            <div class="mt-6 bg-slate-50 border-2 border-slate-200 rounded-2xl p-3 text-center">
+                <div class="text-xs font-bold text-slate-500 mb-2">🔎 راهنمای تصویری روی محور (عدد سمت راست همیشه بزرگ‌تر است):</div>
+                <div id="m3-mini-axis" class="flex items-center justify-between max-w-2xl mx-auto px-2 py-2 overflow-x-auto" dir="ltr"></div>
+            </div>
+        </section>
+
+        <!-- ==================== MODE 4: TEXTBOOK FILL-IN-THE-BLANKS & RULES ==================== -->
+        <section id="mode-4" class="hidden bg-white/95 border-4 border-purple-400 rounded-3xl p-4 sm:p-6 shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b-2 border-dashed border-slate-200">
+                <div>
+                    <h2 class="title-font text-xl sm:text-2xl text-purple-700 flex items-center gap-2">
+                        <span>🏆 مرحله ۴: چالش نهایی جاهای خالی و قوانین کتاب درسی</span>
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-600 mt-0.5">جاهای خالی صفحه کتاب ریاضی ششم را با دقت کامل کن تا مدال قهرمانی بگیری!</p>
+                </div>
+                <div class="bg-purple-50 px-3.5 py-1.5 rounded-xl border border-purple-200 text-xs sm:text-sm font-bold text-purple-800 shrink-0">
+                    سوال <span id="m4-qnum">۱</span> از ۶ | امتیاز مرحله: <span id="m4-score">۰</span>
+                </div>
+            </div>
+
+            <div class="my-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-3xl p-5 sm:p-7 text-center shadow-inner">
+                <div class="inline-block bg-purple-600 text-white text-xs font-bold px-3.5 py-1 rounded-full mb-3">
+                    سوال مفهومی کتاب درسی
+                </div>
+                <p id="m4-question-text" class="text-lg sm:text-2xl font-black text-slate-800 leading-relaxed mb-6"></p>
+
+                <div id="m4-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-w-xl mx-auto"></div>
+            </div>
+
+            <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 text-xs sm:text-sm text-slate-700 space-y-1.5">
+                <div class="font-black text-amber-800 text-sm mb-1">📌 خلاصه نکات طلایی استاد رضا شیرمردی:</div>
+                <div>🔹 عددهای <span class="ltr-num font-bold">... , +۳ , +۲ , +۱ , ۰ , −۱ , −۲ , −۳ , ...</span> را <strong>اعداد صحیح</strong> می‌نامیم.</div>
+                <div>🔹 هنگام نوشتن اعداد صحیح مثبت، می‌توانیم علامت (+) را ننویسیم؛ مثلاً به جای <span class="ltr-num font-bold text-rose-600">+۴</span> بنویسیم <span class="ltr-num font-bold text-rose-600">۴</span>.</div>
+                <div>🔹 <strong>نکته بسیار مهم:</strong> عدد صفر (۰) نه مثبت است و نه منفی!</div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ==================== DESCRIPTIVE REPORT CARD MODAL (کارنامه توصیفی) ==================== -->
+    <div id="report-modal-backdrop" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div id="report-card-modal" class="bg-white border-4 border-amber-400 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-right relative">
+            <div class="text-center border-b-2 border-dashed border-amber-300 pb-4">
+                <div class="text-4xl mb-1">🏅</div>
+                <h2 class="title-font text-2xl sm:text-3xl text-amber-600">کارنامه توصیفی سرزمین اعداد صحیح</h2>
+                <p class="text-xs sm:text-sm font-bold text-slate-600 mt-1">مدرسه <span id="rep-school">پیوند</span> — معلم مربوطه: استاد رضا شیرمردی</p>
+            </div>
+
+            <!-- Student Detail Banner -->
+            <div class="my-4 bg-amber-50 border-2 border-amber-300 p-3.5 rounded-2xl flex justify-between items-center text-sm font-bold">
+                <div>نام دانش‌آموز: <span id="rep-student-name" class="text-amber-700 font-black">---</span></div>
+                <div>تاریخ صدور: <span class="ltr-num">۱۴۰۵/۰۷/۲۸</span></div>
+            </div>
+
+            <!-- Scores Breakdown -->
+            <div class="space-y-2.5 text-xs sm:text-sm my-4">
+                <div class="flex justify-between items-center bg-sky-50 p-2.5 rounded-xl border border-sky-200">
+                    <span class="font-bold text-sky-900">🐸 مرحله ۱ (محور و قرینه‌ها):</span>
+                    <span id="rep-s1" class="font-black text-sky-700">۰ امتیاز</span>
+                </div>
+                <div class="flex justify-between items-center bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                    <span class="font-bold text-emerald-900">🌡️ مرحله ۲ (دماسنج و آسانسور):</span>
+                    <span id="rep-s2" class="font-black text-emerald-700">۰ امتیاز</span>
+                </div>
+                <div class="flex justify-between items-center bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                    <span class="font-bold text-rose-900">⚔️ مرحله ۳ (مقایسه اعداد صحیح):</span>
+                    <span id="rep-s3" class="font-black text-rose-700">۰ امتیاز</span>
+                </div>
+                <div class="flex justify-between items-center bg-purple-50 p-2.5 rounded-xl border border-purple-200">
+                    <span class="font-bold text-purple-900">🏆 مرحله ۴ (قوانین کتاب درسی):</span>
+                    <span id="rep-s4" class="font-black text-purple-700">۰ امتیاز</span>
+                </div>
+            </div>
+
+            <!-- Final Descriptive Grade Box -->
+            <div class="bg-gradient-to-r from-amber-50 to-yellow-100 border-2 border-amber-400 rounded-2xl p-4 text-center my-4">
+                <div class="text-xs text-amber-800 font-bold">ارزشیابی توصیفی نهایی:</div>
+                <div id="rep-grade-title" class="title-font text-2xl sm:text-3xl text-emerald-600 my-1">🌟 خیلی خوب (عالی)</div>
+                <p id="rep-grade-desc" class="text-xs sm:text-sm text-slate-700 font-semibold"></p>
+            </div>
+
+            <!-- Modal Buttons -->
+            <div class="flex gap-3 justify-center mt-5 no-print">
+                <button onclick="window.print()" class="btn-3d bg-sky-500 hover:bg-sky-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-1.5">
+                    <span>🖨️ چاپ / ذخیره PDF کارنامه</span>
+                </button>
+                <button onclick="closeReportCard()" class="btn-3d bg-slate-200 hover:bg-slate-300 text-slate-800 px-5 py-2.5 rounded-xl font-bold text-sm">
+                    بستن و بازگشت به بازی
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           UTILITIES: PERSIAN NUMERALS & SYNTHESIZED WEB AUDIO SOUND EFFECTS
+           ========================================================================== */
+        const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        function toPersianNum(num, includePlus = false) {
+            if (num === 0) return '۰';
+            const sign = num > 0 ? (includePlus ? '+' : '') : '−';
+            const absStr = Math.abs(num).toString().replace(/\d/g, d => persianDigits[d]);
+            return sign + absStr;
+        }
+
+        let soundEnabled = true;
+        let audioCtx = null;
+        let studentProfile = { name: '', school: 'پیوند' };
+
+        function startGame() {
+            const nameInput = document.getElementById('login-student-name').value.trim();
+            const schoolInput = document.getElementById('login-school-name').value.trim();
+
+            if (!nameInput) {
+                alert('لطفاً نام خود را وارد کنید تا کارنامه شما صادر شود!');
+                return;
+            }
+
+            studentProfile.name = nameInput;
+            studentProfile.school = schoolInput || 'پیوند';
+
+            document.getElementById('display-student').textContent = studentProfile.name;
+            document.getElementById('display-school').textContent = studentProfile.school;
+
+            const modal = document.getElementById('welcome-modal');
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                const container = document.getElementById('game-container');
+                container.classList.remove('opacity-40', 'pointer-events-none');
+            }, 300);
+
+            playSound('correct');
+        }
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(280, now);
+                    osc.frequency.exponentialRampToValueAtTime(620, now + 0.18);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+                } else if (type === 'correct') {
+                    const notes = [523.25, 659.25, 783.99, 1046.5];
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.22, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.008, now + idx * 0.08 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.25);
+                    });
+                } else if (type === 'wrong') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(140, now + 0.28);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.28);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                }
+            } catch (e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-btn').textContent = soundEnabled ? '🔊' : '🔇';
+        }
+
+        /* ==========================================================================
+           GLOBAL GAME STATE & SCORE MANAGEMENT
+           ========================================================================== */
+        const scores = { m1: 0, m2: 0, m3: 0, m4: 0 };
+
+        function addScore(modeKey, pts) {
+            scores[modeKey] += pts;
+            const total = scores.m1 + scores.m2 + scores.m3 + scores.m4;
+            document.getElementById('score-display').textContent = toPersianNum(total);
+            document.getElementById(`${modeKey}-score`).textContent = toPersianNum(scores[modeKey]);
+        }
+
+        function showFeedback(msg, isSuccess) {
+            const banner = document.getElementById('feedback-banner');
+            banner.classList.remove('hidden', 'bg-emerald-100', 'border-emerald-400', 'text-emerald-900', 'bg-rose-100', 'border-rose-400', 'text-rose-900');
+            if (isSuccess) {
+                banner.classList.add('bg-emerald-100', 'border-emerald-400', 'text-emerald-900');
+            } else {
+                banner.classList.add('bg-rose-100', 'border-rose-400', 'text-rose-900');
+            }
+            banner.innerHTML = msg;
+        }
+
+        function switchMode(modeNum) {
+            playSound('jump');
+            document.getElementById('feedback-banner').classList.add('hidden');
+            for (let i = 1; i <= 4; i++) {
+                const sec = document.getElementById(`mode-${i}`);
+                const tab = document.getElementById(`tab-${i}`);
+                if (i === modeNum) {
+                    sec.classList.remove('hidden');
+                    tab.classList.add('tab-active');
+                } else {
+                    sec.classList.add('hidden');
+                    tab.classList.remove('tab-active');
+                }
+            }
+        }
+
+        /* ==========================================================================
+           MODE 1: INTERACTIVE NUMBER LINE & OPPOSITES (-6 to +6)
+           ========================================================================== */
+        const m1Challenges = [
+            { type: 'مستقیم', prompt: 'قورباغه دانا می‌خواهد به عدد صحیح مثبت <span class="ltr-num text-rose-600">+۴</span> بپرد. روی آن کلیک کن!', target: 4, showArc: false },
+            { type: 'قرینه', prompt: 'قرینه‌ی عدد <span class="ltr-num text-rose-600">+۲</span> کدام عدد است؟ روی محور پیدایش کن!', target: -2, oppositeOf: 2, showArc: true },
+            { type: 'قرینه', prompt: 'قرینه‌ی عدد منفی <span class="ltr-num text-sky-600">−۵</span> کدام عدد است؟', target: 5, oppositeOf: -5, showArc: true },
+            { type: 'مرز اعداد', prompt: 'کدام عدد روی محور، مرز بین مثبت و منفی است و «نه مثبت است و نه منفی»؟', target: 0, showArc: false },
+            { type: 'حرکت روی محور', prompt: 'اگر از عدد <span class="ltr-num text-sky-600">−۱</span>، به اندازه ۴ واحد به سمت چپ (جهت منفی) برویم به چه عددی می‌رسیم؟', target: -5, showArc: false },
+            { type: 'بزرگ‌ترین منفی', prompt: 'بزرگ‌ترین عدد صحیح منفی که از همه به صفر نزدیک‌تر است کدام است؟', target: -1, showArc: false }
+        ];
+        let m1Index = 0;
+
+        function getAxisX(val) {
+            return 380 + val * 50;
+        }
+
+        function initMode1NumberLine() {
+            const ticksGroup = document.getElementById('m1-ticks-group');
+            ticksGroup.innerHTML = '';
+
+            for (let n = -6; n <= 6; n++) {
+                const x = getAxisX(n);
+                const isZero = n === 0;
+                const isPos = n > 0;
+                const color = isZero ? '#059669' : (isPos ? '#e11d48' : '#0284c7');
+                const bgFill = isZero ? '#d1fae5' : (isPos ? '#ffe4e6' : '#e0f2fe');
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.style.cursor = 'pointer';
+                g.onclick = () => handleMode1Click(n);
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', isZero ? 108 : 113);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', isZero ? 142 : 137);
+                line.setAttribute('stroke', color);
+                line.setAttribute('stroke-width', isZero ? '4' : '3');
+                g.appendChild(line);
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', x);
+                circle.setAttribute('cy', 158);
+                circle.setAttribute('r', 18);
+                circle.setAttribute('fill', bgFill);
+                circle.setAttribute('stroke', color);
+                circle.setAttribute('stroke-width', '2.5');
+                g.appendChild(circle);
+
+                const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                txt.setAttribute('x', x);
+                txt.setAttribute('y', 164);
+                txt.setAttribute('fill', color);
+                txt.setAttribute('font-size', '15');
+                txt.setAttribute('font-weight', '900');
+                txt.setAttribute('text-anchor', 'middle');
+                txt.setAttribute('direction', 'ltr');
+                txt.textContent = toPersianNum(n, true);
+                g.appendChild(txt);
+
+                ticksGroup.appendChild(g);
+            }
+            loadMode1Question();
+        }
+
+        function loadMode1Question() {
+            const q = m1Challenges[m1Index];
+            document.getElementById('m1-qnum').textContent = toPersianNum(m1Index + 1);
+            document.getElementById('m1-qtype').textContent = `ماموریت (${q.type}):`;
+            document.getElementById('m1-prompt').innerHTML = q.prompt;
+        }
+
+        function moveFrogTo(val) {
+            const x = getAxisX(val);
+            const frog = document.getElementById('frog-avatar');
+            const frogInner = document.getElementById('frog-inner');
+            frog.setAttribute('transform', `translate(${x}, 82)`);
+            frogInner.classList.remove('hopping');
+            void frogInner.offsetWidth;
+            frogInner.classList.add('hopping');
+        }
+
+        function drawOppositeArc(n1, n2, color = '#ec4899') {
+            const arcsGroup = document.getElementById('m1-arcs-group');
+            arcsGroup.innerHTML = '';
+            const x1 = getAxisX(n1);
+            const x2 = getAxisX(n2);
+            const rx = Math.abs(x2 - x1) / 2;
+            const ry = Math.min(85, 25 + Math.abs(n1) * 11);
+            const sweep = x1 > x2 ? 0 : 1;
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M ${x1} 112 A ${rx} ${ry} 0 0 ${sweep} ${x2} 112`);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', color);
+            path.setAttribute('stroke-width', '3.5');
+            path.setAttribute('stroke-dasharray', '6,4');
+            arcsGroup.appendChild(path);
+
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', 380);
+            label.setAttribute('y', 112 - ry - 6);
+            label.setAttribute('fill', color);
+            label.setAttribute('font-size', '13');
+            label.setAttribute('font-weight', 'bold');
+            label.setAttribute('text-anchor', 'middle');
+            label.textContent = `قرینه‌ی ${toPersianNum(n1, true)} عدد ${toPersianNum(n2, true)} است`;
+            arcsGroup.appendChild(label);
+        }
+
+        function showOppositeDemo() {
+            playSound('jump');
+            const arcsGroup = document.getElementById('m1-arcs-group');
+            arcsGroup.innerHTML = '';
+            const pairs = [
+                { n: 1, color: '#ec4899', ry: 30 },
+                { n: 2, color: '#8b5cf6', ry: 48 },
+                { n: 4, color: '#0ea5e9', ry: 72 }
+            ];
+            pairs.forEach(p => {
+                const xPos = getAxisX(p.n);
+                const xNeg = getAxisX(-p.n);
+                const rx = (xPos - xNeg) / 2;
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${xPos} 112 A ${rx} ${p.ry} 0 0 0 ${xNeg} 112`);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', p.color);
+                path.setAttribute('stroke-width', '2.5');
+                arcsGroup.appendChild(path);
+            });
+            showFeedback('🌈 کمان‌های قرینه دقیقاً مانند صفحه کتاب درسی نمایش داده شدند! هر عدد و قرینه‌اش هم‌فاصله از صفر هستند.', true);
+        }
+
+        function handleMode1Click(clickedVal) {
+            moveFrogTo(clickedVal);
+            const q = m1Challenges[m1Index];
+
+            if (clickedVal === q.target) {
+                playSound('correct');
+                addScore('m1', 10);
+                if (q.showArc) {
+                    drawOppositeArc(q.oppositeOf, q.target);
+                } else {
+                    document.getElementById('m1-arcs-group').innerHTML = '';
+                }
+                showFeedback(`🎉 آفرین قهرمان! عدد <span class="ltr-num">${toPersianNum(clickedVal, true)}</span> کاملاً درست است! (+۱۰ امتیاز)`, true);
+
+                setTimeout(() => {
+                    if (m1Index < m1Challenges.length - 1) {
+                        m1Index++;
+                        loadMode1Question();
+                    } else {
+                        launchConfetti();
+                        showFeedback('🏆 فوق‌العاده! تمام سوال‌های مرحله ۱ را با موفقیت کامل کردی! حالا به مرحله ۲ برو.', true);
+                    }
+                }, 1500);
+            } else {
+                playSound('wrong');
+                const hint = clickedVal > q.target ? 'باید بیشتر به سمت چپ (کوچک‌تر) بپری!' : 'باید بیشتر به سمت راست (بزرگ‌تر) بپری!';
+                showFeedback(`🤔 دقت کن! تو روی <span class="ltr-num">${toPersianNum(clickedVal, true)}</span> پریدی. ${hint}`, false);
+            }
+        }
+
+        /* ==========================================================================
+           MODE 2: THERMOMETER & ELEVATOR SIMULATOR
+           ========================================================================== */
+        let currentThermo = 0;
+        let currentElevator = 0;
+        let m2Index = 0;
+
+        const m2Challenges = [
+            { targetType: 'thermo', badge: '🌡️ چالش دماسنج', prompt: 'هوای زمستانی اردبیل ۴ درجه زیر صفر است. دماسنج را روی این دما تنظیم کن!', answer: -4 },
+            { targetType: 'elevator', badge: '🏢 چالش آسانسور', prompt: 'خودرو در پارکینگ طبقه ۲ زیرِ همکف پارک شده است. آسانسور را به آن طبقه ببر!', answer: -2 },
+            { targetType: 'thermo', badge: '🌡️ چالش دماسنج', prompt: 'دمای هوا ابتدا ۲ درجه زیر صفر (−۲) بود و ۵ درجه گرم‌تر شد. الان دماسنج چه عددی را نشان می‌دهد؟', answer: 3 },
+            { targetType: 'elevator', badge: '🏢 چالش آسانسور', prompt: 'رضا در طبقه +۲ بود و ۳ طبقه پایین رفت. آسانسور را روی طبقه جدید قرار بده!', answer: -1 },
+            { targetType: 'thermo', badge: '🌡️ چالش دماسنج', prompt: 'آب در چه دمایی شروع به یخ زدن می‌کند (مرز بین دمای بالای صفر و زیر صفر)؟', answer: 0 },
+            { targetType: 'elevator', badge: '🏢 چالش آسانسور', prompt: 'آسانسور در پارکینگ −۳ است و ۶ طبقه بالا می‌آید. الان در کدام طبقه است؟', answer: 3 }
+        ];
+
+        function initMode2() {
+            const container = document.getElementById('building-floors');
+            container.innerHTML = '';
+            for (let f = 4; f >= -3; f--) {
+                const isZero = f === 0;
+                const isPos = f > 0;
+                const btn = document.createElement('button');
+                btn.id = `floor-btn-${f}`;
+                btn.onclick = () => setElevatorFloor(f);
+                btn.className = `w-full py-1.5 px-3 rounded-lg font-bold text-xs flex justify-between items-center transition-all border ${
+                    isZero ? 'bg-emerald-100 text-emerald-900 border-emerald-400' :
+                    (isPos ? 'bg-rose-50 text-rose-900 border-rose-200' : 'bg-sky-50 text-sky-900 border-sky-200')
+                }`;
+                const floorTitle = isZero ? 'همکف (صفر)' : (isPos ? `طبقه ${toPersianNum(f)}` : `پارکینگ ${toPersianNum(Math.abs(f))}`);
+                btn.innerHTML = `
+                    <span>${floorTitle}</span>
+                    <span class="ltr-num font-black px-1.5 py-0.5 rounded bg-white/80">${toPersianNum(f, true)}</span>
+                `;
+                container.appendChild(btn);
+            }
+            updateThermoUI();
+            updateElevatorUI();
+            loadMode2Question();
+        }
+
+        function changeThermo(delta) {
+            playSound('jump');
+            currentThermo = Math.max(-6, Math.min(6, currentThermo + delta));
+            updateThermoUI();
+        }
+
+        function updateThermoUI() {
+            const pct = ((currentThermo + 6) / 12) * 84 + 8;
+            const fill = document.getElementById('thermo-fill');
+            const bulb = document.getElementById('thermo-bulb');
+            const readout = document.getElementById('thermo-readout');
+            const badge = document.getElementById('thermo-Status-badge');
+
+            fill.style.height = `${pct}%`;
+            const numTxt = toPersianNum(currentThermo, true) + '°';
+            bulb.textContent = numTxt;
+            readout.textContent = numTxt + 'C';
+
+            fill.classList.remove('bg-rose-500', 'bg-sky-500', 'bg-emerald-500');
+            bulb.classList.remove('bg-rose-500', 'bg-sky-500', 'bg-emerald-500');
+            readout.classList.remove('text-rose-600', 'text-sky-600', 'text-emerald-600');
+
+            if (currentThermo > 0) {
+                fill.classList.add('bg-rose-500');
+                bulb.classList.add('bg-rose-500');
+                readout.classList.add('text-rose-600');
+                badge.className = 'px-4 py-1.5 rounded-xl font-black text-xs sm:text-sm bg-rose-100 text-rose-800 border border-rose-300';
+                badge.textContent = '☀️ هوای گرم (بالای صفر)';
+            } else if (currentThermo < 0) {
+                fill.classList.add('bg-sky-500');
+                bulb.classList.add('bg-sky-500');
+                readout.classList.add('text-sky-600');
+                badge.className = 'px-4 py-1.5 rounded-xl font-black text-xs sm:text-sm bg-sky-100 text-sky-800 border border-sky-300';
+                badge.textContent = '❄️ هوای سرد (زیر صفر)';
+            } else {
+                fill.classList.add('bg-emerald-500');
+                bulb.classList.add('bg-emerald-500');
+                readout.classList.add('text-emerald-600');
+                badge.className = 'px-4 py-1.5 rounded-xl font-black text-xs sm:text-sm bg-emerald-100 text-emerald-800 border border-emerald-300';
+                badge.textContent = '💧 مرز یخ‌زدگی (صفر درجه)';
+            }
+        }
+
+        function moveElevator(delta) {
+            setElevatorFloor(Math.max(-3, Math.min(4, currentElevator + delta)));
+        }
+
+        function setElevatorFloor(floor) {
+            playSound('jump');
+            currentElevator = floor;
+            updateElevatorUI();
+        }
+
+        function updateElevatorUI() {
+            document.getElementById('elevator-readout').textContent = toPersianNum(currentElevator, true);
+            for (let f = 4; f >= -3; f--) {
+                const btn = document.getElementById(`floor-btn-${f}`);
+                if (f === currentElevator) {
+                    btn.classList.add('ring-4', 'ring-amber-400', 'scale-105', 'z-10');
+                } else {
+                    btn.classList.remove('ring-4', 'ring-amber-400', 'scale-105', 'z-10');
+                }
+            }
+        }
+
+        function loadMode2Question() {
+            const q = m2Challenges[m2Index];
+            document.getElementById('m2-qnum').textContent = toPersianNum(m2Index + 1);
+            document.getElementById('m2-badge').textContent = q.badge;
+            document.getElementById('m2-prompt').textContent = q.prompt;
+
+            const thermoPanel = document.getElementById('thermo-panel');
+            const elevPanel = document.getElementById('elevator-panel');
+            if (q.targetType === 'thermo') {
+                thermoPanel.classList.add('ring-4', 'ring-amber-400');
+                elevPanel.classList.remove('ring-4', 'ring-amber-400');
+            } else {
+                elevPanel.classList.add('ring-4', 'ring-amber-400');
+                thermoPanel.classList.remove('ring-4', 'ring-amber-400');
+            }
+        }
+
+        function checkMode2Answer() {
+            const q = m2Challenges[m2Index];
+            const userVal = q.targetType === 'thermo' ? currentThermo : currentElevator;
+
+            if (userVal === q.answer) {
+                playSound('correct');
+                addScore('m2', 10);
+                showFeedback(`🌟 عالی بود! عدد <span class="ltr-num">${toPersianNum(q.answer, true)}</span> کاملاً صحیح است! (+۱۰ امتیاز)`, true);
+                setTimeout(() => {
+                    if (m2Index < m2Challenges.length - 1) {
+                        m2Index++;
+                        loadMode2Question();
+                    } else {
+                        launchConfetti();
+                        showFeedback('🎉 تبریک! تمام ماموریت‌های دماسنج و آسانسور را کامل کردی!', true);
+                    }
+                }, 1400);
+            } else {
+                playSound('wrong');
+                showFeedback(`❌ هنوز دقیق تنظیم نشده! تو عدد <span class="ltr-num">${toPersianNum(userVal, true)}</span> را انتخاب کردی. دوباره سوال را بخوان.`, false);
+            }
+        }
+
+        /* ==========================================================================
+           MODE 3: COMPARING INTEGERS BATTLE
+           ========================================================================== */
+        const m3Questions = [
+            { r: 3, l: -5, exp: 'هر عدد صحیح مثبت از هر عدد صحیح منفی بزرگ‌تر است!' },
+            { r: -2, l: 0, exp: 'همه‌ی اعداد صحیح منفی از صفر کوچک‌تر (کمتر) هستند!' },
+            { r: -1, l: -6, exp: 'روی محور اعداد، −۱ در سمت راست −۶ قرار دارد پس بزرگ‌تر است!' },
+            { r: 4, l: 0, exp: 'همه‌ی عددهای صحیح مثبت از صفر بزرگ‌ترند!' },
+            { r: -5, l: -2, exp: 'دمای ۵ درجه زیر صفر (−۵) از ۲ درجه زیر صفر (−۲) سردتر و کوچک‌تر است!' },
+            { r: 5, l: 5, exp: 'یادمان باشد +۵ همان ۵ است، پس دو عدد با هم مساوی هستند!' },
+            { r: 0, l: -4, exp: 'صفر از تمام عددهای صحیح منفی بزرگ‌تر است!' },
+            { r: -3, l: 1, exp: 'عدد منفی همیشه در سمت چپ عدد مثبت قرار دارد و کوچک‌تر است.' }
+        ];
+        let m3Index = 0;
+
+        function styleBattleCard(cardEl, numEl, labelEl, val) {
+            numEl.textContent = toPersianNum(val, val > 0);
+            cardEl.className = 'w-40 h-36 sm:w-48 sm:h-44 rounded-3xl border-4 flex flex-col items-center justify-center shadow-lg transition-all ';
+            if (val > 0) {
+                cardEl.classList.add('bg-rose-50', 'border-rose-400', 'text-rose-600');
+                labelEl.className = 'text-xs font-bold mt-2 px-3 py-0.5 rounded-full bg-rose-200 text-rose-900';
+                labelEl.textContent = 'صحیح مثبت (+)';
+            } else if (val < 0) {
+                cardEl.classList.add('bg-sky-50', 'border-sky-400', 'text-sky-600');
+                labelEl.className = 'text-xs font-bold mt-2 px-3 py-0.5 rounded-full bg-sky-200 text-sky-900';
+                labelEl.textContent = 'صحیح منفی (−)';
+            } else {
+                cardEl.classList.add('bg-emerald-50', 'border-emerald-400', 'text-emerald-600');
+                labelEl.className = 'text-xs font-bold mt-2 px-3 py-0.5 rounded-full bg-emerald-200 text-emerald-900';
+                labelEl.textContent = 'صفر (مرز اعداد)';
+            }
+        }
+
+        function loadMode3Question() {
+            const q = m3Questions[m3Index];
+            document.getElementById('m3-qnum').textContent = toPersianNum(m3Index + 1);
+            document.getElementById('m3-operator-box').textContent = '؟';
+
+            styleBattleCard(
+                document.getElementById('m3-card-right'),
+                document.getElementById('m3-num-right'),
+                document.getElementById('m3-label-right'),
+                q.r
+            );
+            styleBattleCard(
+                document.getElementById('m3-card-left'),
+                document.getElementById('m3-num-left'),
+                document.getElementById('m3-label-left'),
+                q.l
+            );
+
+            const axis = document.getElementById('m3-mini-axis');
+            axis.innerHTML = '';
+            for (let n = -6; n <= 6; n++) {
+                const isSelected = (n === q.r || n === q.l);
+                const badge = document.createElement('div');
+                badge.className = `w-9 h-9 rounded-full flex items-center justify-center text-xs font-black transition-all shrink-0 ${
+                    isSelected
+                        ? 'bg-amber-400 text-slate-900 ring-4 ring-amber-300 scale-125 z-10'
+                        : (n === 0 ? 'bg-emerald-100 text-emerald-800' : (n > 0 ? 'bg-rose-100 text-rose-800' : 'bg-sky-100 text-sky-800'))
+                }`;
+                badge.textContent = toPersianNum(n, true);
+                axis.appendChild(badge);
+            }
+        }
+
+        function submitComparison(op) {
+            const q = m3Questions[m3Index];
+            const correctOp = q.r > q.l ? '>' : (q.r < q.l ? '<' : '=');
+            document.getElementById('m3-operator-box').textContent = op;
+
+            if (op === correctOp) {
+                playSound('correct');
+                addScore('m3', 10);
+                showFeedback(`✅ احسنت! ${q.exp} (+۱۰ امتیاز)`, true);
+                setTimeout(() => {
+                    if (m3Index < m3Questions.length - 1) {
+                        m3Index++;
+                        loadMode3Question();
+                    } else {
+                        launchConfetti();
+                        showFeedback('🏆 قهرمان نبرد اعداد! تمام مقایسه‌ها را درست جواب دادی!', true);
+                    }
+                }, 1500);
+            } else {
+                playSound('wrong');
+                showFeedback(`❌ دقت کن! به محور پایین نگاه کن: هر عددی که در سمت <strong>راست</strong> قرار بگیرد بزرگ‌تر است. (${q.exp})`, false);
+            }
+        }
+
+        /* ==========================================================================
+           MODE 4: TEXTBOOK FILL-IN-THE-BLANKS QUIZ
+           ========================================================================== */
+        const m4Questions = [
+            {
+                text: '۱. بر روی محور اعداد صحیح، هرچه به سمت .............. پیش برویم عددها بزرگ‌تر می‌شوند.',
+                options: ['راست', 'چپ', 'پایین', 'مرکز'],
+                answer: 'راست'
+            },
+            {
+                text: '۲. هر عدد صحیحِ .............. از هر عدد صحیحِ منفی بزرگ‌تر است.',
+                options: ['مثبت', 'کوچک‌تر', 'منفی', 'فرد'],
+                answer: 'مثبت'
+            },
+            {
+                text: '۳. همه‌ی عددهای صحیح مثبت از عدد صفر (۰) .............. هستند.',
+                options: ['بزرگ‌تر', 'کوچک‌تر', 'مساوی', 'کمتر'],
+                answer: 'بزرگ‌تر'
+            },
+            {
+                text: '۴. همه‌ی اعداد صحیح منفی از صفر .............. هستند.',
+                options: ['کمتر (کوچک‌تر)', 'بیشتر (بزرگ‌تر)', 'گرم‌تر', 'مساوی'],
+                answer: 'کمتر (کوچک‌تر)'
+            },
+            {
+                text: '۵. کدام جمله درباره عدد صفر (۰) کاملاً درست است؟',
+                options: [
+                    'عدد صفر نه مثبت است و نه منفی',
+                    'عدد صفر یک عدد صحیح مثبت است',
+                    'عدد صفر یک عدد صحیح منفی است',
+                    'عدد صفر اصلاً جزو اعداد صحیح نیست'
+                ],
+                answer: 'عدد صفر نه مثبت است و نه منفی'
+            },
+            {
+                text: '۶. هنگام نوشتن اعداد صحیح مثبت، می‌توانیم علامت (+) را ننویسیم؛ مثلاً به جای ۴+ بنویسیم ..............',
+                options: ['۴', '۴−', '۰', '۱/۴'],
+                answer: '۴'
+            }
+        ];
+        let m4Index = 0;
+
+        function loadMode4Question() {
+            const q = m4Questions[m4Index];
+            document.getElementById('m4-qnum').textContent = toPersianNum(m4Index + 1);
+            document.getElementById('m4-question-text').textContent = q.text;
+
+            const optsContainer = document.getElementById('m4-options');
+            optsContainer.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-3d bg-white hover:bg-purple-100 text-slate-800 border-2 border-purple-300 rounded-2xl p-3.5 font-black text-sm sm:text-base transition-all';
+                btn.textContent = opt;
+                btn.onclick = () => checkMode4Answer(opt);
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function checkMode4Answer(selected) {
+            const q = m4Questions[m4Index];
+            if (selected === q.answer) {
+                playSound('correct');
+                addScore('m4', 10);
+                showFeedback(`🌟 آفرین دانش‌آموز باهوش مدرسه پیوند! پاسخ «${q.answer}» کاملاً درست است! (+۱۰ امتیاز)`, true);
+                setTimeout(() => {
+                    if (m4Index < m4Questions.length - 1) {
+                        m4Index++;
+                        loadMode4Question();
+                    } else {
+                        launchConfetti();
+                        showFeedback('🎓 تبریک! تمام مراحل را به پایان رساندی! روی دکمه «کارنامه توصیفی» در بالای صفحه کلیک کن.', true);
+                    }
+                }, 1400);
+            } else {
+                playSound('wrong');
+                showFeedback('❌ دوباره تلاش کن! به نکات طلایی پایین صفحه دقت کن.', false);
+            }
+        }
+
+        /* ==========================================================================
+           DESCRIPTIVE REPORT CARD & CONFETTI CELEBRATION
+           ========================================================================== */
+        function openReportCard() {
+            playSound('jump');
+            document.getElementById('rep-student-name').textContent = studentProfile.name || 'دانش‌آموز گرامی';
+            document.getElementById('rep-school').textContent = studentProfile.school || 'پیوند';
+
+            document.getElementById('rep-s1').textContent = toPersianNum(scores.m1) + ' امتیاز';
+            document.getElementById('rep-s2').textContent = toPersianNum(scores.m2) + ' امتیاز';
+            document.getElementById('rep-s3').textContent = toPersianNum(scores.m3) + ' امتیاز';
+            document.getElementById('rep-s4').textContent = toPersianNum(scores.m4) + ' امتیاز';
+
+            const total = scores.m1 + scores.m2 + scores.m3 + scores.m4;
+            const titleEl = document.getElementById('rep-grade-title');
+            const descEl = document.getElementById('rep-grade-desc');
+
+            if (total >= 180) {
+                titleEl.textContent = '🌟 خیلی خوب (فوق‌العاده)';
+                titleEl.className = 'title-font text-2xl sm:text-3xl text-emerald-600 my-1';
+                descEl.textContent = `دانش‌آموز عزیز ${studentProfile.name}، تو مفاهیم اعداد صحیح مثبت و منفی، قرینه و مقایسه روی محور را به صورت کامل و عمیق یاد گرفته‌ای. استاد رضا شیرمردی به تو افتخار می‌کند!`;
+            } else if (total >= 110) {
+                titleEl.textContent = '👏 خوب';
+                titleEl.className = 'title-font text-2xl sm:text-3xl text-sky-600 my-1';
+                descEl.textContent = `عملکرد خوبی داشتی ${studentProfile.name} عزیز! بیشتر مباحث اعداد صحیح را یاد گرفته‌ای. با تلاش بیشتر می‌توانی به درجه «خیلی خوب» برسی.`;
+            } else if (total >= 50) {
+                titleEl.textContent = '🙂 قابل قبول';
+                titleEl.className = 'title-font text-2xl sm:text-3xl text-amber-600 my-1';
+                descEl.textContent = `شروع خوبی است! پیشنهاد می‌شود مراحل بازی را در مدرسه ${studentProfile.school} بیشتر تمرین کنی.`;
+            } else {
+                titleEl.textContent = '💪 نیازمند تلاش بیشتر';
+                titleEl.className = 'title-font text-2xl sm:text-3xl text-rose-600 my-1';
+                descEl.textContent = 'هنوز در ابتدای مسیر هستی! مراحل ۱ تا ۴ بازی را انجام بده تا امتیاز جمع کنی و کارنامه‌ات بدرخشد.';
+            }
+
+            const backdrop = document.getElementById('report-modal-backdrop');
+            backdrop.classList.remove('hidden');
+            backdrop.classList.add('flex');
+        }
+
+        function closeReportCard() {
+            const backdrop = document.getElementById('report-modal-backdrop');
+            backdrop.classList.add('hidden');
+            backdrop.classList.remove('flex');
+        }
+
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const pieces = Array.from({ length: 75 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                r: Math.random() * 6 + 4,
+                dx: (Math.random() - 0.5) * 4,
+                dy: Math.random() * 4 + 3,
+                color: ['#f43f5e', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6'][Math.floor(Math.random() * 5)]
+            }));
+
+            let frames = 0;
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pieces.forEach(p => {
+                    p.x += p.dx;
+                    p.y += p.dy;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                });
+                frames++;
+                if (frames < 140) {
+                    requestAnimationFrame(render);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            render();
+        }
+
+        window.onload = function () {
+            initMode1NumberLine();
+            initMode2();
+            loadMode3Question();
+            loadMode4Question();
+        };
+    </script>
+</body>
+</html>
